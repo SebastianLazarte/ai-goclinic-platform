@@ -46,7 +46,7 @@ const Login: React.FC<LoginProps> = ({ onSwitchToSignup }) => {
 
     try {
       await login(formData.email, formData.password);
-    } catch (error) {
+    } catch {
       setErrors({ general: 'Invalid email or password. Please try again.' });
     } finally {
       setIsSubmitting(false);

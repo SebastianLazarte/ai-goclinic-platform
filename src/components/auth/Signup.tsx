@@ -61,7 +61,7 @@ const Signup: React.FC<SignupProps> = ({ onSwitchToLogin }) => {
 
     try {
       await signup(formData.email, formData.password, formData.name);
-    } catch (error) {
+    } catch {
       setErrors({ general: 'Failed to create account. Please try again.' });
     } finally {
       setIsSubmitting(false);

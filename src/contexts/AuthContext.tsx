@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { User as SupabaseUser } from '@supabase/supabase-js';
 import { User, AuthState } from '../types';
+import { supabase } from '../lib/supabase';
 
 interface AuthContextType extends AuthState {
   login: (email: string, password: string) => Promise<void>;
@@ -29,114 +31,94 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   });
 
   useEffect(() => {
-    // Check for existing session on app load
-    const checkAuthState = () => {
-      const storedUser = localStorage.getItem('go-clinic-user');
-      if (storedUser) {
-        try {
-          const user = JSON.parse(storedUser);
-          setAuthState({
-            user,
-            isAuthenticated: true,
-            isLoading: false
-          });
-        } catch (error) {
-          localStorage.removeItem('go-clinic-user');
-          setAuthState({
-            user: null,
-            isAuthenticated: false,
-            isLoading: false
-          });
-        }
-      } else {
+    const convertUser = (user: SupabaseUser): User => ({
+      id: user.id,
+      email: user.email ?? '',
+      name: (user.user_metadata?.name as string) || '',
+      createdAt: user.created_at
+    });
+
+    const initialize = async () => {
+      const { data } = await supabase.auth.getSession();
+      const sessionUser = data.session?.user;
+      if (sessionUser) {
         setAuthState({
-          user: null,
-          isAuthenticated: false,
+          user: convertUser(sessionUser),
+          isAuthenticated: true,
           isLoading: false
         });
+      } else {
+        setAuthState({ user: null, isAuthenticated: false, isLoading: false });
       }
     };
 
-    checkAuthState();
+    initialize();
+
+    const {
+      data: { subscription }
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      const authUser = session?.user;
+      if (authUser) {
+        setAuthState({
+          user: convertUser(authUser),
+          isAuthenticated: true,
+          isLoading: false
+        });
+      } else {
+        setAuthState({ user: null, isAuthenticated: false, isLoading: false });
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   const login = async (email: string, password: string): Promise<void> => {
     setAuthState(prev => ({ ...prev, isLoading: true }));
-    
-    try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Mock authentication - in real app, this would be an API call
-      if (email && password) {
-        const user: User = {
-          id: '1',
-          email,
-          name: email.split('@')[0],
-          createdAt: new Date().toISOString()
-        };
-        
-        localStorage.setItem('go-clinic-user', JSON.stringify(user));
-        setAuthState({
-          user,
-          isAuthenticated: true,
-          isLoading: false
-        });
-      } else {
-        throw new Error('Invalid credentials');
-      }
-    } catch (error) {
-      setAuthState({
-        user: null,
-        isAuthenticated: false,
-        isLoading: false
-      });
-      throw error;
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+
+    if (error || !data.user) {
+      setAuthState({ user: null, isAuthenticated: false, isLoading: false });
+      throw error || new Error('Invalid credentials');
     }
+
+    const user: User = {
+      id: data.user.id,
+      email: data.user.email ?? '',
+      name: (data.user.user_metadata?.name as string) || '',
+      createdAt: data.user.created_at
+    };
+
+    setAuthState({ user, isAuthenticated: true, isLoading: false });
   };
 
   const signup = async (email: string, password: string, name: string): Promise<void> => {
     setAuthState(prev => ({ ...prev, isLoading: true }));
-    
-    try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Mock user creation - in real app, this would be an API call
-      if (email && password && name) {
-        const user: User = {
-          id: Date.now().toString(),
-          email,
-          name,
-          createdAt: new Date().toISOString()
-        };
-        
-        localStorage.setItem('go-clinic-user', JSON.stringify(user));
-        setAuthState({
-          user,
-          isAuthenticated: true,
-          isLoading: false
-        });
-      } else {
-        throw new Error('All fields are required');
-      }
-    } catch (error) {
-      setAuthState({
-        user: null,
-        isAuthenticated: false,
-        isLoading: false
-      });
-      throw error;
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { data: { name } }
+    });
+
+    if (error || !data.user) {
+      setAuthState({ user: null, isAuthenticated: false, isLoading: false });
+      throw error || new Error('Failed to create account');
     }
+
+    const user: User = {
+      id: data.user.id,
+      email: data.user.email ?? '',
+      name: (data.user.user_metadata?.name as string) || '',
+      createdAt: data.user.created_at
+    };
+
+    setAuthState({ user, isAuthenticated: true, isLoading: false });
   };
 
-  const logout = () => {
-    localStorage.removeItem('go-clinic-user');
-    setAuthState({
-      user: null,
-      isAuthenticated: false,
-      isLoading: false
-    });
+  const logout = async () => {
+    await supabase.auth.signOut();
+    setAuthState({ user: null, isAuthenticated: false, isLoading: false });
   };
 
   const value: AuthContextType = {

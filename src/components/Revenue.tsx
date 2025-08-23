@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { BarChart3, TrendingUp, Calendar, Euro } from 'lucide-react';
+import { TrendingUp, Calendar, Euro } from 'lucide-react';
 import { Visit } from '../types';
 
 interface RevenueProps {
