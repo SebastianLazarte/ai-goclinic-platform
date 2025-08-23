@@ -7,69 +7,53 @@ import AddVisit from './components/AddVisit';
 import Revenue from './components/Revenue';
 import Navigation from './components/Navigation';
 import FloatingActionButton from './components/FloatingActionButton';
+import { useVisits } from './hooks/useVisits';
 import { Visit } from './types';
 
 function App() {
   const [currentView, setCurrentView] = useState<'dashboard' | 'add-visit' | 'revenue' | 'settings' | 'profile'>('dashboard');
-  const [visits, setVisits] = useState<Visit[]>([
-    {
-      id: '1',
-      patientName: 'Maria González',
-      insuranceCompany: 'AXA',
-      location: 'Clinic Barcelona Centro',
-      date: '2024-04-09',
-      time: '09:00',
-      revenue: 150,
-      reminder: true
-    },
-    {
-      id: '2',
-      patientName: 'Carlos Martínez',
-      insuranceCompany: 'Allianz',
-      location: 'Clinic Barcelona Norte',
-      date: '2024-04-10',
-      time: '10:00',
-      revenue: 175,
-      reminder: false
-    },
-    {
-      id: '3',
-      patientName: 'Ana Rodríguez',
-      insuranceCompany: 'MAPFRE',
-      location: 'Clinic Barcelona Sur',
-      date: '2024-04-10',
-      time: '11:00',
-      revenue: 160,
-      reminder: true
-    }
-  ]);
+  const { visits, loading, error, addVisit, updateVisit, deleteVisit } = useVisits();
   
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
   const [editingVisit, setEditingVisit] = useState<Visit | null>(null);
 
-  const handleAddVisit = (visit: Omit<Visit, 'id'>) => {
-    const newVisit: Visit = {
-      ...visit,
-      id: Date.now().toString()
-    };
-    setVisits(prev => [...prev, newVisit]);
-    setShowSuccessMessage(true);
-    setCurrentView('dashboard');
-    
-    setTimeout(() => setShowSuccessMessage(false), 3000);
+  const handleAddVisit = async (visit: Omit<Visit, 'id'>) => {
+    try {
+      await addVisit(visit);
+      setSuccessMessage('Visit added successfully');
+      setShowSuccessMessage(true);
+      setCurrentView('dashboard');
+      
+      setTimeout(() => setShowSuccessMessage(false), 3000);
+    } catch (error) {
+      console.error('Error adding visit:', error);
+      // You could add error handling UI here
+    }
   };
 
-  const handleEditVisit = (visit: Visit) => {
-    setVisits(prev => prev.map(v => v.id === visit.id ? visit : v));
-    setEditingVisit(null);
-    setShowSuccessMessage(true);
-    setCurrentView('dashboard');
-    
-    setTimeout(() => setShowSuccessMessage(false), 3000);
+  const handleEditVisit = async (visit: Visit) => {
+    try {
+      await updateVisit(visit);
+      setEditingVisit(null);
+      setSuccessMessage('Visit updated successfully');
+      setShowSuccessMessage(true);
+      setCurrentView('dashboard');
+      
+      setTimeout(() => setShowSuccessMessage(false), 3000);
+    } catch (error) {
+      console.error('Error updating visit:', error);
+      // You could add error handling UI here
+    }
   };
 
-  const handleDeleteVisit = (visitId: string) => {
-    setVisits(prev => prev.filter(v => v.id !== visitId));
+  const handleDeleteVisit = async (visitId: string) => {
+    try {
+      await deleteVisit(visitId);
+    } catch (error) {
+      console.error('Error deleting visit:', error);
+      // You could add error handling UI here
+    }
   };
 
   const startEditVisit = (visit: Visit) => {
@@ -142,9 +126,24 @@ function App() {
         <div className="fixed top-20 right-4 z-50 bg-green-50 border border-green-200 rounded-lg p-4 shadow-lg animate-fade-in">
           <div className="flex items-center space-x-2">
             <Check className="h-5 w-5 text-green-600" />
-            <span className="text-green-800 font-medium">
-              {editingVisit ? 'Visit updated successfully' : 'Visit added successfully'}
-            </span>
+            <span className="text-green-800 font-medium">{successMessage}</span>
+          </div>
+        </div>
+      )}
+      
+      {loading && (
+        <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 bg-blue-50 border border-blue-200 rounded-lg p-4 shadow-lg">
+          <div className="flex items-center space-x-2">
+            <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+            <span className="text-blue-800 font-medium">Loading visits...</span>
+          </div>
+        </div>
+      )}
+      
+      {error && (
+        <div className="fixed top-20 right-4 z-50 bg-red-50 border border-red-200 rounded-lg p-4 shadow-lg">
+          <div className="flex items-center space-x-2">
+            <span className="text-red-800 font-medium">Error: {error}</span>
           </div>
         </div>
       )}

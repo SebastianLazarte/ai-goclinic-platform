@@ -3,7 +3,7 @@ import { ChevronDown, MapPin, Calendar, Clock, Euro, Bell, ArrowLeft } from 'luc
 import { Visit } from '../types';
 
 interface AddVisitProps {
-  onSubmit: (visit: Omit<Visit, 'id'> | Visit) => void;
+  onSubmit: (visit: Omit<Visit, 'id'> | Visit) => Promise<void>;
   editingVisit?: Visit | null;
   onCancel: () => void;
 }
