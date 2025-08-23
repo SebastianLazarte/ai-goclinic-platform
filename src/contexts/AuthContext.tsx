@@ -41,6 +41,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             isLoading: false
           });
         } catch (error) {
+          console.error(error);
           localStorage.removeItem('go-clinic-user');
           setAuthState({
             user: null,
@@ -67,15 +68,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // Mock authentication - in real app, this would be an API call
-      if (email && password) {
+      // Hardcoded demo authentication
+      if (email === 'demo@goclinic.com' && password === 'demo123') {
         const user: User = {
           id: '1',
           email,
-          name: email.split('@')[0],
+          name: 'Demo User',
           createdAt: new Date().toISOString()
         };
-        
+
         localStorage.setItem('go-clinic-user', JSON.stringify(user));
         setAuthState({
           user,

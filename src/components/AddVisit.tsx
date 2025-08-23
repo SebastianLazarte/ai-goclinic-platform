@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronDown, MapPin, Calendar, Clock, Euro, Bell, ArrowLeft } from 'lucide-react';
+import { ChevronDown, Calendar, Clock, Euro, Bell, ArrowLeft } from 'lucide-react';
 import { Visit } from '../types';
 
 interface AddVisitProps {
